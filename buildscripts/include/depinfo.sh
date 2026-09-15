@@ -8,7 +8,6 @@ v_ndk=30.0.16248370
 v_sdk_build_tools=37.0.0
 v_cmake=4.1.2
 
-v_lua=5.2.4
 v_libunibreak=7_0
 v_libass=0.17.5
 v_harfbuzz=14.4.0
@@ -22,7 +21,6 @@ v_dav1d=1.5.4
 v_ffmpeg=9.0.1
 v_mpv=0.41.0
 
-
 ## Dependency tree
 # I would've used a dict but putting arrays in a dict is not a thing
 
@@ -35,7 +33,7 @@ dep_fribidi=()
 dep_harfbuzz=()
 dep_libunibreak=()
 dep_libass=(freetype fontconfig fribidi harfbuzz libunibreak)
-dep_lua=()
+
 dep_libplacebo=()
-dep_mpv=(ffmpeg libass lua libplacebo)
+dep_mpv=(ffmpeg libass libplacebo)
 dep_mpv_android=(mpv)
