@@ -88,7 +88,9 @@ void *event_thread(void *arg) {
         switch (mp_event->event_id) {
         case MPV_EVENT_LOG_MESSAGE:
             msg = (mpv_event_log_message*)mp_event->data;
-            ALOGV("[%s:%s] %s", msg->prefix, msg->level, msg->text);
+            // Not echoed to logcat: mpv messages quote the stream URL, which embeds the IPTV
+            // account credentials (e.g. "Opening http://host/live/USER/PASS/1.ts"). The embedding
+            // app receives them through MPVLib.logMessage and redacts them before logging.
             sendLogMessageToJava(env, instance, msg);
             break;
         case MPV_EVENT_PROPERTY_CHANGE:
