@@ -1,0 +1,41 @@
+name: Release AAR
+
+# Publishes the AAR built by a "Build libmpv-android" run as a GitHub release, tagged on the
+# commit that run built. Embedding apps download it from there (Actions artifacts need a token).
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: ID of the successful Build run whose AAR is released
+        required: true
+      tag:
+        description: Release tag, e.g. aar-0.41.0-3
+        required: true
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download the run's AAR and publish it
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ inputs.run_id }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          [[ "$RUN_ID" =~ ^[0-9]+$ ]] || { echo "run_id must be numeric"; exit 1; }
+          [[ "$TAG" =~ ^aar-[0-9A-Za-z.-]+$ ]] || { echo "tag must look like aar-0.41.0-3"; exit 1; }
+          read -r conclusion workflow sha < <(gh run view "$RUN_ID" -R "$GITHUB_REPOSITORY" \
+            --json conclusion,workflowName,headSha -q '"\(.conclusion) \(.workflowName|gsub(" ";"_")) \(.headSha)"')
+          [[ "$conclusion" == success && "$workflow" == Build_libmpv-android ]] || { echo "run $RUN_ID is not a successful build"; exit 1; }
+          gh run download "$RUN_ID" -R "$GITHUB_REPOSITORY" -n libmpv-release.aar -D out
+          mv out/libmpv-release.aar "libmpv-lgpl-${TAG#aar-}.aar"
+          digest=$(sha256sum "libmpv-lgpl-${TAG#aar-}.aar" | cut -d' ' -f1)
+          gh release create "$TAG" "libmpv-lgpl-${TAG#aar-}.aar" -R "$GITHUB_REPOSITORY" --target "$sha" \
+            --title "$TAG" \
+            --notes "AAR built by run https://github.com/$GITHUB_REPOSITORY/actions/runs/$RUN_ID (commit $sha). SHA-256: $digest"
