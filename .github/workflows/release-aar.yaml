@@ -30,9 +30,12 @@ jobs:
           set -euo pipefail
           [[ "$RUN_ID" =~ ^[0-9]+$ ]] || { echo "run_id must be numeric"; exit 1; }
           [[ "$TAG" =~ ^aar-[0-9A-Za-z.-]+$ ]] || { echo "tag must look like aar-0.41.0-3"; exit 1; }
-          read -r conclusion workflow sha < <(gh run view "$RUN_ID" -R "$GITHUB_REPOSITORY" \
-            --json conclusion,workflowName,headSha -q '"\(.conclusion) \(.workflowName|gsub(" ";"_")) \(.headSha)"')
+          # Only a build of this repository's main branch: a pull request run may build a fork's code
+          read -r conclusion workflow event branch sha < <(gh run view "$RUN_ID" -R "$GITHUB_REPOSITORY" \
+            --json conclusion,workflowName,event,headBranch,headSha \
+            -q '"\(.conclusion) \(.workflowName|gsub(" ";"_")) \(.event) \(.headBranch) \(.headSha)"')
           [[ "$conclusion" == success && "$workflow" == Build_libmpv-android ]] || { echo "run $RUN_ID is not a successful build"; exit 1; }
+          [[ "$event" == push && "$branch" == main ]] || { echo "run $RUN_ID did not build main (event $event, branch $branch)"; exit 1; }
           gh run download "$RUN_ID" -R "$GITHUB_REPOSITORY" -n libmpv-release.aar -D out
           mv out/libmpv-release.aar "libmpv-lgpl-${TAG#aar-}.aar"
           digest=$(sha256sum "libmpv-lgpl-${TAG#aar-}.aar" | cut -d' ' -f1)
